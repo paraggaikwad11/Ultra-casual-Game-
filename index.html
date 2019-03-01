@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>space shooter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            margin: 0;
+        }
+    </style>
+    <script src="phaser.js"></script>
+</head>
+<body>
+    
+</body>
+<script>
+
+    // Setup all the components that will be used in the game here
+    var space;
+    var players;
+    var bullet;
+    var coins;
+    var curser;
+    var shooter;
+    var game;
+    var score_text;
+    var score=0; 
+    var coin_sound;
+    var single_coin;
+    // Setup Game development environment for PHaserJS
+    game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.CANVAS, 'Space-Shooter',{preload:preload, create:create, update:update, render:render} );
+
+    // Preload Function
+    // setInterval(function{
+    //     score++;
+
+    // },1000);
+    function preload() {
+        // Preload PLayer, coin, starField, coin_touch_audio
+        game.load.image("players", "L1/thrust_ship.png");
+        game.load.image("coins", "L1/coin.png");
+        game.load.image("space", "L1/starfield1.png");
+        game.load.image("bullet", "L1/rgblaser.png");
+        game.load.audio("coin_audio", "L1/metal.wav");
+         
+
+    }
+
+    // Create Function 
+
+    function create() {
+        // Establish Physics Engine
+        // game.physics.StartSystem(Phaser.Physics.Arcade);
+        space = game.add.tileSprite(0,0, window.innerWidth, window.innerHeight, 'space');
+        player = game.add.sprite(200, 400, 'players');
+        player.scale.set(3);
+        
+        // Add Background TileSprite and player sprite
+       
+        // Set Anchor and Scale of the player
+        player.anchor.set(0.5, 0.5);
+        // Enable arcade physics on player
+        game.physics.arcade.enable(player);
+        // Add score text
+        score_text = game.add.text(200, 200, 'Score: ', {fill:'#fff', font: "60px Aerial"})
+        // Add coin sound
+        coin_sound = game.add.audio('coin_audio');
+        // Initialize coin group
+        coins = game.add.group();
+        // Set Scale to the whole coin group        
+        for(var i=0;i<20;i++) {
+            
+            single_coin = coins.create(game.rnd.between(0, window.innerWidth), game.rnd.between(0, window.innerHeight), 'coins');
+        }
+    
+        // Create multiple coins using coin group and enable arcade physics on each of them
+        game.physics.arcade.enable(coins);
+        // Create bullets group
+        bullet = game.add.weapon(30, 'bullet');
+        bullet.setBulletFrames(0, 80, true);
+        bullet.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
+        bullet.bulletSpeed = 500;
+        bullet.fireRate = 50;
+        // Set Spacebar for shooting bullets
+
+        // shooter = game.input.Keyboard.
+        
+        // Set cursor for moving the player
+        // cursor=game.input.add
+        player.body.drag.set(40);
+        player.body.maxVelocity.set(300);
+        bullet.trackSprite(player, 0, 0, true);
+        // Set Spacebar for shooting bullets
+        shooter = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+        // Set cursor for moving the player
+        cursor = game.input.keyboard.createCursorKeys();
+
+    }
+
+    // Update Function
+
+    function update() {
+
+        // Update the motion of background tileSprite using tilePosition parameter
+        space.tilePosition.x+=5;
+        // Update the score value using the setText function on the score variable
+        score_text.setText("Score: "+score);
+        // Add the player motion and weapon logic from docs
+      
+        if (cursor.up.isDown)
+        {
+            game.physics.arcade.accelerationFromRotation(player.rotation, 300, player.body.acceleration);
+        }
+        // else if(cursor.down.isDown)
+        // {
+        //     player.body.acceleration.set(-180);
+        // }
+        else
+        {
+            player.body.acceleration.set(0);
+        }
+        if(cursor.left.isDown) {
+            player.body.angularVelocity = -300;
+        } else if(cursor.right.isDown) {
+            player.body.angularVelocity = 300;
+        } else {
+            player.body.angularVelocity = 0;
+        }
+
+        if(shooter.isDown) {
+            bullet.fire();
+        }
+
+        if(player.x>window.innerWidth){
+            player.x = 10;  
+        }
+        
+        if(player.x<0){
+            player.x = window.innerWidth-10;
+        }
+        if(player.y>window.innerWidth){
+            player.y = 10;  
+        }
+        
+        if(player.y<0){
+            player.y = window.innerWidth-10;
+        }
+        
+    }
+
+    // Render Function
+
+    function render() {
+        
+        // Add the player coin collision logic
+        // game.physics.arcade.collide();
+	    game.physics.arcade.collide(player,coins, handler, processor, this);
+	    game.physics.arcade.collide(bullet.bullets,coins, BulletHandler, BulletProcessor  ,null, this);
+
+        // If spacebar is pressed then call the shoot function to shoot the bullet
+    }
+
+    // Implement handler function for player coin collision
+    function BulletHandler(b, c){
+        score++;
+        c.x = game.rnd.between(0,400);
+        c.y = game.rnd.between(0,700);
+        coin_sound.play();
+        console.log("bullet hit");
+        return false;
+    }
+    function BulletProcessor(b, c) {
+        // Increase the score
+        score++;
+        // put coin at a random place by updating it's x and y coordinate
+        
+        // PLay coin sound
+        coin_sound.play();
+        return true;
+    }
+    function handler(p, c) { 
+            console.log("handler called");
+            return false;
+    }
+    // Implement processor function for player coin collision
+    function processor(p, c) {
+        // Increase the score
+        score--;
+        // put coin at a random place by updating it's x and y coordinate
+        c.x = game.rnd.between(0, 600);
+        c.y = game.rnd.between(0, 600);
+        // PLay coin sound
+        coin_sound.play()
+        return false; // If returned true then the handler will be called
+    }
+
+    function shoot() {
+        // Create a new bullter from the bullet group with x, y from player x, y
+
+        // Set the anchor and scale of the bullet
+
+        // Enable physics on the bullet
+
+        // Update bullet velocity's x and y values
+    }
+
+</script>
+</html>
